@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>因果推論手法マップ（学術的に正確な分類）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', 'Yu Gothic UI', 'Meiryo', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .ladder-level {
+            margin-bottom: 30px;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .ladder-level.level-1 {
+            border-color: #28a745;
+        }
+
+        .ladder-level.level-2 {
+            border-color: #ffc107;
+        }
+
+        .ladder-level.level-3 {
+            border-color: #dc3545;
+        }
+
+        .ladder-level.bridge {
+            border-color: #17a2b8;
+        }
+
+        .level-header {
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+
+        .level-1 .level-header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .level-2 .level-header {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            color: white;
+        }
+
+        .level-3 .level-header {
+            background: linear-gradient(135deg, #dc3545, #e83e8c);
+            color: white;
+        }
+
+        .bridge .level-header {
+            background: linear-gradient(135deg, #17a2b8, #6f42c1);
+            color: white;
+        }
+
+        .level-header:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .level-header::after {
+            content: '▼';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%) rotate(0deg);
+            transition: transform 0.3s ease;
+            font-size: 0.8em;
+        }
+
+        .level-header.expanded::after {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .level-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+            background: #f8f9fa;
+        }
+
+        .level-content.expanded {
+            max-height: 8000px;
+        }
+
+        .level-description {
+            padding: 20px;
+            background: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            margin: 15px;
+            border-radius: 5px;
+        }
+
+        .level-question {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 8px;
+        }
+
+        .category {
+            margin: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .category-header {
+            padding: 15px 20px;
+            background: #e9ecef;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .category-header:hover {
+            background: #dee2e6;
+        }
+
+        .category-header::after {
+            content: '▶';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%) rotate(0deg);
+            transition: transform 0.3s ease;
+            font-size: 0.8em;
+        }
+
+        .category-header.expanded::after {
+            transform: translateY(-50%) rotate(90deg);
+        }
+
+        .category-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .category-content.expanded {
+            max-height: 4000px;
+        }
+
+        .method-group {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .method-group:last-child {
+            border-bottom: none;
+        }
+
+        .method-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            cursor: pointer;
+            position: relative;
+            padding-left: 20px;
+            transition: color 0.2s ease;
+        }
+
+        .method-title:hover {
+            color: #007bff;
+        }
+
+        .method-title::before {
+            content: '●';
+            position: absolute;
+            left: 0;
+            color: #6c757d;
+            font-size: 0.8em;
+        }
+
+        .method-description {
+            color: #6c757d;
+            font-size: 0.95em;
+            margin-left: 20px;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .sub-methods {
+            margin-left: 20px;
+            padding-left: 15px;
+            border-left: 2px solid #e9ecef;
+        }
+
+        .sub-method {
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #495057;
+        }
+
+        .sub-method-title {
+            font-weight: 500;
+            color: #007bff;
+        }
+
+        .purpose-tag {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .warning-tag {
+            display: inline-block;
+            background: #fff3cd;
+            color: #856404;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .bridge-tag {
+            display: inline-block;
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .expand-all {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .expand-all button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+
+        .expand-all button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .note-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px;
+            font-size: 0.9em;
+        }
+
+        .note-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .header p {
+                font-size: 1em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .level-header {
+                font-size: 1.1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>因果推論手法マップ</h1>
+            <p>ジュデア・パールの「因果の梯子」による学術的に正確な分類</p>
+        </div>
+
+        <div class="content">
+            <div class="note-box">
+                <div class="note-title">重要事項</div>
+                この分類は学術文献調査に基づく正確な分類です。手法によっては解釈や使用文脈により複数レベルにまたがる場合があります。タグで注意点を示しています。
+            </div>
+
+            <div class="expand-all">
+                <button onclick="expandAll()">すべて展開</button>
+                <button onclick="collapseAll()">すべて折りたたみ</button>
+            </div>
+
+            <!-- レベル1: 相関 (Association) -->
+            <div class="ladder-level level-1">
+                <div class="level-header" onclick="toggleLevel('level1')">
+                    レベル1: 相関 (Association) - 見る (Seeing)
+                </div>
+                <div class="level-content" id="level1">
+                    <div class="level-description">
+                        <div class="level-question">問い: 「Xを見たら、Yはどうなっているか？」</div>
+                        <div>観察データから変数間の統計的な関連性（相関）を見出す。予測は可能だが、因果関係については何も言えない。キーワード: 予測、相関、条件付き確率 P(Y|X)</div>
+                    </div>
+
+                    <div class="category">
+                        <div class="category-header" onclick="toggleCategory('basic-association')">
+                            基本的な関連性の測定
+                            <span class="purpose-tag">原因の特定/因果構造の発見</span>
+                        </div>
+                        <div class="category-content" id="basic-association">
+                            <div class="method-group">
+                                <div class="method-title">相関分析 (Correlation)</div>
+                                <div class="method-description">2変数間の線形または非線形の統計的関連性の強さと方向性を示す。関連性の尺度であり、因果を意味しない。</div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">偏相関 (Partial Correlation)</div>
+                                <div class="method-description">第三の変数を統制するが、交絡の完全な解決にはならず、因果的解釈は不可。交絡の可能性を示唆するのに役立つ。</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="category">
+                        <div class="category-header" onclick="toggleCategory('prediction-models')">
+                            予測モデリング
+                        </div>
+                        <div class="category-content" id="prediction-models">
+                            <div class="method-group">
+                                <div class="method-title">回帰分析（基本形）
+                                <span class="warning-tag">因果解釈には強い仮定が必要</span>
+                                </div>
+                                <div class="method-description">予測モデルとして強力。係数の因果的解釈には強い仮定（無視可能性など）が必要で、その場合はレベル2に近づく。</div>
+                                <div class="sub-methods">
+                                    <div class="sub-method"><span class="sub-method-title">線形回帰</span> (Linear Regression)</div>
+                                    <div class="sub-method"><span class="sub-method-title">ロジスティック回帰</span> (Logistic Regression)</div>
+                                    <div class="sub-method"><span class="sub-method-title">多項ロジット回帰</span> (Multinomial Logistic Regression)</div>
+                                    <div class="sub-method"><span class="sub-method-title">ポアソン回帰</span> (Poisson Regression)</div>
+                                </div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">時系列分析</div>
+                                <div class="method-description">過去のデータからの将来予測が主目的。</div>
+                                <div class="sub-methods">
+                                    <div class="sub-method"><span class="sub-method-title">ARIMAモデル</span> (AutoRegressive Integrated Moving Average)</div>
+                                    <div class="sub-method"><span class="sub-method-title">VARモデル</span> (Vector AutoRegressive)</div>
+                                </div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">グレンジャー因果性 (Granger Causality)
+                                <span class="warning-tag">「因果」という名だが予測的因果</span>
+                                </div>
+                                <div class="method-description">時間的な先行性に基づく予測の有用性を示すのみで、構造的因果ではない。「Yの予測にXの過去の値が役立つか」を評価。</div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">機械学習手法（単体使用）
+                                <span class="warning-tag">因果推論フレームワーク組込でレベル2へ</span>
+                                </div>
+                                <div class="method-description">主に予測精度を追求するモデル。単体では相関関係の発見に留まる。</div>
+                                <div class="sub-methods">
+                                    <div class="sub-method"><span class="sub-method-title">決定木</span> (Decision Trees)</div>
+                                    <div class="sub-method"><span class="sub-method-title">ランダムフォレスト</span> (Random Forests)</div>
+                                    <div class="sub-method"><span class="sub-method-title">勾配ブースティング</span> (XGBoost, LightGBM)</div>
+                                    <div class="sub-method"><span class="sub-method-title">サポートベクターマシン</span> (SVM)</div>
+                                    <div class="sub-method"><span class="sub-method-title">ニューラルネットワーク</span> (Neural Networks)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- レベル1→2の橋渡し -->
+            <div class="ladder-level bridge">
+                <div class="level-header" onclick="toggleLevel('bridge')">
+                    レベル1→2の橋渡し: 因果構造の発見
+                </div>
+                <div class="level-content" id="bridge">
+                    <div class="level-description">
+                        <div class="level-question">問い: 「データから因果構造を推定できるか？」</div>
+                        <div>観察データ（レベル1）から変数間の因果関係を仮説として提示し、介入（レベル2）を計画するための洞察を提供。</div>
+                    </div>
+
+                    <div class="category">
+                        <div class="category-header" onclick="toggleCategory('causal-discovery')">
+                            因果探索 (Causal Discovery)
+                            <span class="purpose-tag">原因の特定/因果構造の発見</span>
+                        </div>
+                        <div class="category-content" id="causal-discovery">
+                            <div class="method-group">
+                                <div class="method-title">制約ベースアルゴリズム
+                                <span class="bridge-tag">観測→構造仮説</span>
+                                </div>
+                                <div class="method-description">条件付き独立性テストに基づき、データと整合的な因果グラフの候補群を提示。</div>
+                                <div class="sub-methods">
+                                    <div class="sub-method"><span class="sub-method-title">PCアルゴリズム</span> - 最も基本的なアルゴリズム</div>
+                                    <div class="sub-method"><span class="sub-method-title">FCIアルゴリズム</span> - 未測定交絡因子対応</div>
+                                </div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">スコアベースアルゴリズム</div>
+                                <div class="method-description">情報統計量を用いて最適な因果グラフを選択。</div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">関数型因果モデル (Functional Causal Models)
+                                <span class="bridge-tag">誤差項の性質利用</span>
+                                </div>
+                                <div class="sub-methods">
+                                    <div class="sub-method"><span class="sub-method-title">LiNGAM</span> - 線形非ガウス性利用</div>
+                                    <div class="sub-method"><span class="sub-method-title">非線形因果探索</span> - カーネル法、ニューラルネット利用</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- レベル2: 介入 (Intervention) -->
+            <div class="ladder-level level-2">
+                <div class="level-header" onclick="toggleLevel('level2')">
+                    レベル2: 介入 (Intervention) - やる (Doing)
+                </div>
+                <div class="level-content" id="level2">
+                    <div class="level-description">
+                        <div class="level-question">問い: 「Xをしたら、Yはどうなるか？」</div>
+                        <div>特定の変数を意図的に操作（介入）したときの結果を問う。交絡因子の調整が必要となる。キーワード: 効果、実験、do演算子 P(Y|do(X))</div>
+                    </div>
+
+                    <div class="category">
+                        <div class="category-header" onclick="toggleCategory('experimental')">
+                            実験的アプローチ
+                            <span class="purpose-tag">平均的な介入効果の推定</span>
+                        </div>
+                        <div class="category-content" id="experimental">
+                            <div class="method-group">
+                                <div class="method-title">ランダム化比較試験 (RCT)</div>
+                                <div class="method-description">介入効果測定のゴールドスタンダード。交絡を確率的に排除。</div>
+                                <div class="sub-methods">
+                                    <div class="sub-method"><span class="sub-method-title">A/Bテスト</span> (A/B Testing)</div>
+                                    <div class="sub-method"><span class="sub-method-title">クラスターRCT</span> (Cluster RCT)</div>
+                                    <div class="sub-method"><span class="sub-method-title">階層化ランダム化</span> (Stratified Randomization)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="category">
+                        <div class="category-header" onclick="toggleCategory('design-based')">
+                            デザインベースアプローチ（準実験）
+                            <span class="purpose-tag">平均的な介入効果の推定</span>
+                        </div>
+                        <div class="category-content" id="design-based">
+                            <div class="method-group">
+                                <div class="method-title">傾向スコアマッチング (PSM)</div>
+                                <div class="method-description">観察データからRCTを疑似的に再現。強い無視可能性の仮定が必要。</div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">操作変数法 (IV)</div>
+                                <div class="method-description">未観測の交絡因子がある場合に有効。強力な仮定（関連性、除外制約、単調性）が必要。</div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">差の差分析 (DiD)</div>
+                                <div class="method-description">パネルデータを用い、時間とグループ間の差分で効果を推定。平行トレンドの仮定が重要。</div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">回帰不連続デザイン (RDD)</div>
+                                <div class="method-description">介入の割り当てが閾値で決まる場合に適用。局所的な効果を推定。</div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">合成コントロール法 (SCM)</div>
+                                <div class="method-description">ケーススタディ（N=1）で介入効果を推定。複数の対照群を合成して反実仮想を構築。</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="category">
+                        <div class="category-header" onclick="toggleCategory('model-based')">
+                            モデルベースアプローチ
+                            <span class="purpose-tag">平均的な介入効果の推定</span>
+                        </div>
+                        <div class="category-content" id="model-based">
+                            <div class="method-group">
+                                <div class="method-title">共変量調整回帰</div>
+                                <div class="method-description">介入と結果に影響を与える既知の交絡因子を回帰モデルに投入し、統計的に調整。</div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">ダブル機械学習 (DML)</div>
+                                <div class="method-description">高次元の交絡因子を機械学習で統制し、主要な介入変数の効果を頑健に推定。</div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">IPW / G-computation / TMLE</div>
+                                <div class="method-description">介入効果（ATE）を推定するための手法群。それぞれ異なるアプローチで交絡調整を行う。</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="category">
+                        <div class="category-header" onclick="toggleCategory('heterogeneous-effects')">
+                            異質性因果効果の推定
+                            <span class="purpose-tag">個別/異質性因果効果の特定</span>
+                        </div>
+                        <div class="category-content" id="heterogeneous-effects">
+                            <div class="method-group">
+                                <div class="method-title">Causal Forests (因果フォレスト)</div>
+                                <div class="method-description">ランダムフォレストの拡張で、介入効果が異なるサブグループを特定し、個別処置効果（ITE）を推定。</div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">Meta-Learners</div>
+                                <div class="method-description">既存の機械学習アルゴリズムを組み合わせてITEを推定するフレームワーク。</div>
+                                <div class="sub-methods">
+                                    <div class="sub-method"><span class="sub-method-title">S-Learner</span> - Single Learner</div>
+                                    <div class="sub-method"><span class="sub-method-title">T-Learner</span> - Two Learners</div>
+                                    <div class="sub-method"><span class="sub-method-title">X-Learner</span> - Cross Learner</div>
+                                </div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">Deep Learning for Causal Inference</div>
+                                <div class="method-description">複雑な非線形関係や高次元データからITE/HTEを推定。</div>
+                                <div class="sub-methods">
+                                    <div class="sub-method"><span class="sub-method-title">Dragonnet</span></div>
+                                    <div class="sub-method"><span class="sub-method-title">TarNet</span></div>
+                                    <div class="sub-method"><span class="sub-method-title">Ganite</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- レベル2/3の境界 -->
+            <div class="ladder-level bridge">
+                <div class="level-header" onclick="toggleLevel('bridge23')">
+                    レベル2/3の境界: 理論駆動型モデリング
+                </div>
+                <div class="level-content" id="bridge23">
+                    <div class="level-description">
+                        <div class="level-question">解釈による分類: 介入効果推定 vs 反実仮想推論</div>
+                        <div>理論的な因果構造を前提とし、その枠組み内で介入効果を推定したり、反実仮想シナリオを分析したりする手法。</div>
+                    </div>
+
+                    <div class="category">
+                        <div class="category-header" onclick="toggleCategory('structural-modeling')">
+                            構造モデリング
+                            <span class="warning-tag">レベル2/3にまたがる</span>
+                        </div>
+                        <div class="category-content" id="structural-modeling">
+                            <div class="method-group">
+                                <div class="method-title">構造方程式モデリング (SEM) / 経路分析
+                                <span class="purpose-tag">因果メカニズムの解明</span>
+                                </div>
+                                <div class="method-description">研究者が事前に定義した因果構造（理論モデル）が正しいという強い仮定の下で、介入の効果を推定（レベル2）したり、特定の個人の反実仮想的な結果を推論（レベル3）する。</div>
+                                <div class="sub-methods">
+                                    <div class="sub-method"><span class="sub-method-title">ベイズ統計モデリングによるSEM</span> - 不確実性を確率分布で表現</div>
+                                    <div class="sub-method"><span class="sub-method-title">DAGベースの調整</span> - バックドア・フロントドア基準利用</div>
+                                </div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">媒介分析 (Mediation Analysis)
+                                <span class="warning-tag">手法により異なる</span>
+                                <span class="purpose-tag">因果メカニズムの解明</span>
+                                </div>
+                                <div class="method-description">伝統的な手法はレベル2の回帰係数の組み合わせと見なせるが、近年の反実仮想に基づくアプローチ（Imai et al.）はレベル3に分類される。</div>
+                                <div class="sub-methods">
+                                    <div class="sub-method"><span class="sub-method-title">伝統的媒介分析</span> - レベル2的解釈</div>
+                                    <div class="sub-method"><span class="sub-method-title">自然直接効果</span> (Natural Direct Effect) - レベル3</div>
+                                    <div class="sub-method"><span class="sub-method-title">自然間接効果</span> (Natural Indirect Effect) - レベル3</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- レベル3: 反実仮想 (Counterfactuals) -->
+            <div class="ladder-level level-3">
+                <div class="level-header" onclick="toggleLevel('level3')">
+                    レベル3: 反実仮想 (Counterfactuals) - もしそうだったらどうなるか (Imagining)
+                </div>
+                <div class="level-content" id="level3">
+                    <div class="level-description">
+                        <div class="level-question">問い: 「もしXが〜だったら、Yはどうなっていただろうか？」</div>
+                        <div>過去に起こらなかった事柄についての問い。個別レベルでの原因の帰属や後悔などを扱う、最も高度な推論。キーワード: もし〜だったら、原因、帰属、P(Y_x|X=x', Y=y')</div>
+                    </div>
+
+                    <div class="category">
+                        <div class="category-header" onclick="toggleCategory('counterfactual-analysis')">
+                            反実仮想分析
+                            <span class="purpose-tag">政策評価/反実仮想シナリオ</span>
+                        </div>
+                        <div class="category-content" id="counterfactual-analysis">
+                            <div class="method-group">
+                                <div class="method-title">反実仮想シミュレーション</div>
+                                <div class="method-description">特定のモデル（SEMなど）に基づき、「もし〜だったら」のシナリオを明示的に計算・シミュレーションする。</div>
+                            </div>
+                            <div class="method-group">
+                                <div class="method-title">個人レベルの因果効果推定</div>
+                                <div class="method-description">集団平均ではなく、特定の個人に対する「もし治療を受けていたら/受けていなかったら」の結果を推定。</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="category">
+                        <div class="category-header" onclick="toggleCategory('robustness-analysis')">
+                            頑健性の評価
+                            <span class="warning-tag">レベル2/3横断的</span>
+                        </div>
+                        <div class="category-content" id="robustness-analysis">
+                            <div class="method-group">
+                                <div class="method-title">感度分析 (Sensitivity Analysis)</div>
+                                <div class="method-description">未測定の交絡因子が存在する場合に、因果効果の推定がどれくらい影響を受けるか（頑健性）を評価。レベル2、3の推論の頑健性を確認するために不可欠。</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="note-box">
+                <div class="note-title">分類に関する重要な注意点</div>
+                <ul>
+                    <li><strong>グレンジャー因果性</strong>：「因果」という名前ですが、実際は予測的関連性の評価でレベル1に属します。</li>
+                    <li><strong>機械学習手法</strong>：単体では予測ツール（レベル1）ですが、因果推論のフレームワークに組み込むことでレベル2の手法となります。</li>
+                    <li><strong>構造方程式モデリング</strong>：使用目的により、介入効果推定（レベル2）と反実仮想推論（レベル3）の両方に使用されます。</li>
+                    <li><strong>媒介分析</strong>：伝統的手法はレベル2、反実仮想ベースの現代的手法はレベル3に分類されます。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleLevel(levelId) {
+            const content = document.getElementById(levelId);
+            const header = content.previousElementSibling;
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                header.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                header.classList.add('expanded');
+            }
+        }
+
+        function toggleCategory(categoryId) {
+            const content = document.getElementById(categoryId);
+            const header = content.previousElementSibling;
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                header.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                header.classList.add('expanded');
+            }
+        }
+
+        function expandAll() {
+            const levelContents = document.querySelectorAll('.level-content');
+            const levelHeaders = document.querySelectorAll('.level-header');
+            const categoryContents = document.querySelectorAll('.category-content');
+            const categoryHeaders = document.querySelectorAll('.category-header');
+            
+            levelContents.forEach(content => content.classList.add('expanded'));
+            levelHeaders.forEach(header => header.classList.add('expanded'));
+            categoryContents.forEach(content => content.classList.add('expanded'));
+            categoryHeaders.forEach(header => header.classList.add('expanded'));
+        }
+
+        function collapseAll() {
+            const levelContents = document.querySelectorAll('.level-content');
+            const levelHeaders = document.querySelectorAll('.level-header');
+            const categoryContents = document.querySelectorAll('.category-content');
+            const categoryHeaders = document.querySelectorAll('.category-header');
+            
+            levelContents.forEach(content => content.classList.remove('expanded'));
+            levelHeaders.forEach(header => header.classList.remove('expanded'));
+            categoryContents.forEach(content => content.classList.remove('expanded'));
+            categoryHeaders.forEach(header => header.classList.remove('expanded'));
+        }
+    </script>
+</body>
+</html>
